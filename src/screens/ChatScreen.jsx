@@ -13,6 +13,7 @@ import VoiceNoteBubble from '../components/VoiceNoteBubble';
 import VoiceRecorder from '../components/VoiceRecorder';
 import Avatar from '../components/Avatar';
 import GroupAvatar from '../components/GroupAvatar';
+import { Ionicons } from '@expo/vector-icons';
 import { wsConnect, wsDisconnect } from '../utils/websocket';
 import { voiceApi } from '../api/voice';
 
@@ -244,7 +245,7 @@ export default function ChatScreen({ route, navigation }) {
     if (input.trim()) {
       return (
         <TouchableOpacity style={styles.sendBtn} onPress={handleSendText}>
-          <Text style={styles.sendIcon}>➤</Text>
+          <Ionicons name="send" size={20} color="#FFF" />
         </TouchableOpacity>
       );
     }
@@ -264,7 +265,7 @@ export default function ChatScreen({ route, navigation }) {
       <SafeAreaView edges={['top']} style={{ backgroundColor: Colors.primary }}>
         <View style={styles.header}>
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-            <Text style={styles.backText}>←</Text>
+            <Ionicons name="arrow-back" size={24} color="#FFF" />
           </TouchableOpacity>
           <View style={styles.headerInfo}>
             {isGroup
@@ -282,17 +283,14 @@ export default function ChatScreen({ route, navigation }) {
             </View>
           </View>
           <View style={styles.headerActions}>
-            <TouchableOpacity
-              style={styles.actionBtn}
-              onPress={() => navigation.navigate('VideoCall', { contact })}
-            >
-              <Text style={styles.actionIcon}>□</Text>
+            <TouchableOpacity style={styles.actionBtn} onPress={() => navigation.navigate('VideoCall', { contact })}>
+              <Ionicons name="videocam-outline" size={22} color="#FFF" />
             </TouchableOpacity>
             <TouchableOpacity style={styles.actionBtn}>
-              <Text style={styles.actionIcon}>☎</Text>
+              <Ionicons name="call-outline" size={20} color="#FFF" />
             </TouchableOpacity>
             <TouchableOpacity style={styles.actionBtn}>
-              <Text style={styles.actionIcon}>⋮</Text>
+              <Ionicons name="ellipsis-vertical" size={20} color="#FFF" />
             </TouchableOpacity>
           </View>
         </View>
@@ -342,30 +340,27 @@ export default function ChatScreen({ route, navigation }) {
         {/* Input bar */}
         <View style={[styles.inputBar, { paddingBottom: Math.max(insets.bottom, 8) }]}>
           {isVoiceRecording ? (
-            /* ── Recording state ── */
-            <View style={styles.recordingRow}>
+            /* ── Recording state inside pill ── */
+            <View style={styles.inputPill}>
               <View style={styles.recDot} />
               <Text style={styles.recTimer}>{formatRecordingTime(recordingDuration)}</Text>
               <View style={styles.recWaveform}>
                 {waveAnims.map((anim, i) => (
-                  <Animated.View
-                    key={i}
-                    style={[styles.recBar, { height: anim }]}
-                  />
+                  <Animated.View key={i} style={[styles.recBar, { height: anim }]} />
                 ))}
               </View>
               <TouchableOpacity
                 style={styles.cancelRecBtn}
                 onPress={() => { cancelRecordingRef.current = true; }}
               >
-                <Text style={styles.cancelRecText}>✕</Text>
+                <Ionicons name="close" size={18} color={Colors.textSecondary} />
               </TouchableOpacity>
             </View>
           ) : (
-            /* ── Normal state ── */
-            <>
-              <TouchableOpacity style={styles.inputIconBtn}>
-                <Text style={styles.inputIcon}>☺</Text>
+            /* ── Normal pill ── */
+            <View style={styles.inputPill}>
+              <TouchableOpacity style={styles.pillIconBtn}>
+                <Ionicons name="happy-outline" size={24} color={Colors.textSecondary} />
               </TouchableOpacity>
               <TextInput
                 style={styles.input}
@@ -376,17 +371,22 @@ export default function ChatScreen({ route, navigation }) {
                 multiline
                 maxLength={2000}
                 returnKeyType="default"
-                blurOnSubmit={false}
+                submitBehavior="newline"
               />
               {!input.trim() && (
-                <TouchableOpacity style={styles.inputIconBtn}>
-                  <Text style={styles.inputIcon}>⊕</Text>
-                </TouchableOpacity>
+                <>
+                  <TouchableOpacity style={styles.pillIconBtn}>
+                    <Ionicons name="attach" size={23} color={Colors.textSecondary} />
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.pillIconBtn}>
+                    <Ionicons name="camera-outline" size={22} color={Colors.textSecondary} />
+                  </TouchableOpacity>
+                </>
               )}
-            </>
+            </View>
           )}
 
-          {/* Mic / Send / Upload — always on the right */}
+          {/* Mic / Send / Upload — always to the right of the pill */}
           {renderRightControl()}
         </View>
       </KeyboardAvoidingView>
@@ -429,48 +429,56 @@ const styles = StyleSheet.create({
   // ── Input bar ──
   inputBar: {
     flexDirection: 'row', alignItems: 'flex-end',
-    paddingHorizontal: 8, paddingTop: 8,
+    paddingHorizontal: 8, paddingTop: 6, paddingBottom: 6,
     backgroundColor: Colors.background,
-    gap: 6,
+    gap: 8,
     borderTopWidth: 0.5, borderTopColor: Colors.border,
   },
-  inputIconBtn: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center' },
-  inputIcon: { fontSize: 20, color: Colors.textSecondary },
-  input: {
-    flex: 1, minHeight: 36, maxHeight: 120,
-    backgroundColor: Colors.background,
-    borderRadius: 20, paddingHorizontal: 14, paddingVertical: 8,
-    fontSize: 15, color: Colors.textPrimary,
-    borderWidth: 0.5, borderColor: Colors.border,
+
+  // Pill — wraps emoji icon + text input + attach/camera icons
+  inputPill: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.inputBackground,
+    borderRadius: 26,
+    paddingHorizontal: 4,
+    minHeight: 50,
   },
-  sendBtn: {
-    width: 38, height: 38, borderRadius: 19,
-    backgroundColor: Colors.primary,
+  pillIconBtn: {
+    width: 38, height: 38,
     alignItems: 'center', justifyContent: 'center',
   },
-  sendIcon: { fontSize: 16, color: '#FFF' },
-
-  // ── Recording bar (replaces input contents when recording) ──
-  recordingRow: {
-    flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8, height: 36,
+  input: {
+    flex: 1,
+    minHeight: 36, maxHeight: 120,
+    fontSize: 15, color: Colors.textPrimary,
+    paddingHorizontal: 6, paddingVertical: 8,
   },
+
+  // Send / upload button — same size as mic
+  sendBtn: {
+    width: 50, height: 50, borderRadius: 25,
+    backgroundColor: Colors.accent,
+    alignItems: 'center', justifyContent: 'center',
+  },
+
+  // ── Recording state (inside the pill) ──
   recDot: {
     width: 8, height: 8, borderRadius: 4,
-    backgroundColor: Colors.error,
+    backgroundColor: Colors.error, marginLeft: 12,
   },
   recTimer: {
-    fontSize: 14, fontWeight: '600', color: Colors.error, minWidth: 38,
+    fontSize: 14, fontWeight: '600', color: Colors.error,
+    minWidth: 42, marginLeft: 8,
   },
   recWaveform: {
-    flex: 1, flexDirection: 'row', alignItems: 'center', gap: 3,
+    flex: 1, flexDirection: 'row', alignItems: 'center', gap: 3, marginHorizontal: 8,
   },
-  recBar: {
-    width: 3, borderRadius: 2, backgroundColor: Colors.primary,
-  },
+  recBar: { width: 3, borderRadius: 2, backgroundColor: Colors.primary },
   cancelRecBtn: {
-    width: 30, height: 30, borderRadius: 15,
-    backgroundColor: Colors.backgroundSecondary,
+    width: 36, height: 36, borderRadius: 18,
     alignItems: 'center', justifyContent: 'center',
+    marginRight: 4,
   },
-  cancelRecText: { fontSize: 13, color: Colors.textSecondary },
 });

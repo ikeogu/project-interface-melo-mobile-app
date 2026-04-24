@@ -1,5 +1,6 @@
 import React, { useState, useRef } from 'react';
-import { Text, TouchableOpacity, StyleSheet, Animated, Vibration, Alert, Platform } from 'react-native';
+import { TouchableOpacity, StyleSheet, Animated, Vibration, Alert, Platform } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useAudioRecorder, AudioModule, RecordingPresets } from 'expo-audio';
 import { Colors } from '../theme/colors';
 
@@ -122,7 +123,7 @@ export default function VoiceRecorder({ onRecordingComplete, onRecordingChange, 
         activeOpacity={0.8}
         delayPressIn={0}
       >
-        <Text style={styles.micIcon}>🎙</Text>
+        <Ionicons name="mic" size={24} color="#FFF" />
       </TouchableOpacity>
     </Animated.View>
   );
@@ -130,11 +131,10 @@ export default function VoiceRecorder({ onRecordingComplete, onRecordingChange, 
 
 const styles = StyleSheet.create({
   micBtn: {
-    width: 38, height: 38, borderRadius: 19,
-    backgroundColor: Colors.primary,
+    width: 50, height: 50, borderRadius: 25,
+    backgroundColor: Colors.accent,
     alignItems: 'center', justifyContent: 'center',
   },
   micBtnRecording: { backgroundColor: Colors.error },
   micBtnDisabled: { opacity: 0.4 },
-  micIcon: { fontSize: 16 },
 });
