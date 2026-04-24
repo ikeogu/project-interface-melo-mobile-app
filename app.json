@@ -1,0 +1,59 @@
+{
+  "expo": {
+    "name": "Aura",
+    "slug": "ai-contacts",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./src/assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "splash": {
+      "image": "./src/assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0D4F3C"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.aura.aicontacts",
+      "config": {
+        "usesNonExemptEncryption": false
+      },
+      "infoPlist": {
+        "NSMicrophoneUsageDescription": "Aura needs microphone access for voice notes and calls.",
+        "NSCameraUsageDescription": "Aura needs camera access for video calls.",
+        "NSPhotoLibraryUsageDescription": "Aura needs photo access to set your profile picture."
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./src/assets/adaptive-icon.png",
+        "backgroundColor": "#0D4F3C"
+      },
+      "package": "com.aura.aicontacts",
+      "permissions": [
+        "RECORD_AUDIO",
+        "CAMERA",
+        "READ_EXTERNAL_STORAGE",
+        "READ_MEDIA_IMAGES"
+      ]
+    },
+    "plugins": [
+      "expo-secure-store",
+      [
+        "expo-av",
+        {
+          "microphonePermission": "Aura needs microphone access for voice notes and calls."
+        }
+      ],
+      "expo-font",
+      "expo-audio",
+      "expo-video"
+    ],
+    "scheme": "aicontacts",
+    "extra": {
+      "apiUrl": "https://project-interface-melo-backend-production.up.railway.app"
+    }
+  }
+}
