@@ -359,7 +359,10 @@ export default function ChatScreen({ route, navigation }) {
           ) : (
             /* ── Normal pill ── */
             <View style={styles.inputPill}>
-              <TouchableOpacity style={styles.pillIconBtn}>
+              <TouchableOpacity
+                style={styles.pillIconBtn}
+                onPress={() => Alert.alert('Emoji picker', 'Coming in a future update.')}
+              >
                 <Ionicons name="happy-outline" size={24} color={Colors.textSecondary} />
               </TouchableOpacity>
               <TextInput
@@ -375,10 +378,16 @@ export default function ChatScreen({ route, navigation }) {
               />
               {!input.trim() && (
                 <>
-                  <TouchableOpacity style={styles.pillIconBtn}>
+                  <TouchableOpacity
+                    style={styles.pillIconBtn}
+                    onPress={() => Alert.alert('Attachments', 'Coming in a future update.')}
+                  >
                     <Ionicons name="attach" size={23} color={Colors.textSecondary} />
                   </TouchableOpacity>
-                  <TouchableOpacity style={styles.pillIconBtn}>
+                  <TouchableOpacity
+                    style={styles.pillIconBtn}
+                    onPress={() => Alert.alert('Camera', 'Coming in a future update.')}
+                  >
                     <Ionicons name="camera-outline" size={22} color={Colors.textSecondary} />
                   </TouchableOpacity>
                 </>

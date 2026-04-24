@@ -1,14 +1,19 @@
 import * as SecureStore from 'expo-secure-store';
 
-const BASE_WS = (process.env.EXPO_PUBLIC_API_URL || 'https://YOUR_RAILWAY_URL.up.railway.app')
+const API_URL = process.env.EXPO_PUBLIC_API_URL ||
+  'https://project-interface-melo-backend-production.up.railway.app';
+
+const BASE_WS = API_URL
   .replace('https://', 'wss://')
   .replace('http://', 'ws://');
 
 let ws = null;
 let reconnectTimer = null;
-let listeners = {};
+let shouldReconnect = false; // set false by wsDisconnect() to stop the reconnect loop
 
 export const wsConnect = async (userId, onMessage) => {
+  shouldReconnect = true;
+
   const token = await SecureStore.getItemAsync('access_token');
   if (!token || !userId) return;
 
@@ -18,7 +23,6 @@ export const wsConnect = async (userId, onMessage) => {
   ws.onopen = () => {
     console.log('[WS] Connected');
     clearInterval(reconnectTimer);
-    // Heartbeat
     reconnectTimer = setInterval(() => {
       if (ws?.readyState === WebSocket.OPEN) ws.send('ping');
     }, 30000);
@@ -33,15 +37,18 @@ export const wsConnect = async (userId, onMessage) => {
   };
 
   ws.onclose = () => {
-    console.log('[WS] Disconnected — reconnecting in 3s');
     clearInterval(reconnectTimer);
-    setTimeout(() => wsConnect(userId, onMessage), 3000);
+    if (shouldReconnect) {
+      console.log('[WS] Disconnected — reconnecting in 3s');
+      setTimeout(() => wsConnect(userId, onMessage), 3000);
+    }
   };
 
   ws.onerror = (e) => console.log('[WS] Error:', e.message);
 };
 
 export const wsDisconnect = () => {
+  shouldReconnect = false;
   clearInterval(reconnectTimer);
   ws?.close();
   ws = null;

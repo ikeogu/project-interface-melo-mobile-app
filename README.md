@@ -83,3 +83,7 @@ App launch → Splash (2s) → restore session?
 | ChatScreen | GET/POST /messages/{chat_id} + WebSocket |
 | CreateContactScreen | POST /contacts/ |
 | VideoCallScreen | POST /calls/video/{contact_id} |
+
+npx eas-cli@latest init --id c9d4223b-e487-4086-bebc-191b4e8e1d6f
+npx eas-cli@latest build --platform all --auto-submit
+ProInterface@2026

@@ -36,24 +36,30 @@
         "RECORD_AUDIO",
         "CAMERA",
         "READ_EXTERNAL_STORAGE",
-        "READ_MEDIA_IMAGES"
+        "READ_MEDIA_IMAGES",
+        "READ_MEDIA_AUDIO",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.MODIFY_AUDIO_SETTINGS",
+        "android.permission.READ_MEDIA_AUDIO"
       ]
     },
     "plugins": [
       "expo-secure-store",
       [
-        "expo-av",
+        "expo-audio",
         {
           "microphonePermission": "Aura needs microphone access for voice notes and calls."
         }
       ],
       "expo-font",
-      "expo-audio",
       "expo-video"
     ],
     "scheme": "aicontacts",
     "extra": {
-      "apiUrl": "https://project-interface-melo-backend-production.up.railway.app"
+      "apiUrl": "https://project-interface-melo-backend-production.up.railway.app",
+      "eas": {
+        "projectId": "ca24d618-7555-4348-8b6b-ef13ba6f82a3"
+      }
     }
   }
 }

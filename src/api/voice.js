@@ -7,10 +7,11 @@ const BASE_URL = process.env.EXPO_PUBLIC_API_URL ||
 export const voiceApi = {
 
   uploadVoiceNote: async (localUri) => {
-    // Derive extension + MIME type from the actual file URI.
-    // Android can produce .m4a or .mp4 depending on device / OS version.
+    // Android can produce .m4a or .mp4 depending on device/OS version.
     const ext = localUri.split('.').pop()?.toLowerCase() ?? 'm4a';
     const mimeType = ext === 'mp4' ? 'audio/mp4' : `audio/${ext}`;
+
+    console.log('[Voice] Uploading:', localUri, 'mime:', mimeType);
 
     const formData = new FormData();
     formData.append('file', {
@@ -19,28 +20,25 @@ export const voiceApi = {
       type: mimeType,
     });
 
-    // Use fetch instead of Axios for the file upload.
-    // React Native's native fetch sets the multipart/form-data boundary
-    // automatically and correctly — Axios can mangle it when an instance-level
-    // Content-Type: application/json default is present.
+    // Use fetch, not Axios — React Native's fetch sets the multipart boundary
+    // correctly; Axios with a default JSON Content-Type corrupts it.
     const token = await SecureStore.getItemAsync('access_token');
+    if (!token) throw new Error('No auth token — please sign in again.');
+
     const response = await fetch(`${BASE_URL}/api/v1/voice/upload`, {
       method: 'POST',
-      headers: {
-        Authorization: `Bearer ${token}`,
-        // Do NOT set Content-Type — fetch sets it with the correct boundary
-      },
+      headers: { Authorization: `Bearer ${token}` },
       body: formData,
     });
 
     if (!response.ok) {
       const body = await response.text();
-      console.error('Upload failed:', response.status, body);
+      console.error('[Voice] Upload failed:', response.status, body);
       throw new Error(`Upload failed: ${response.status}`);
     }
 
     const data = await response.json();
-    console.log('Upload succeeded, url:', data.url);
+    console.log('[Voice] Upload succeeded:', data.url);
     return data.url;
   },
 
@@ -52,6 +50,7 @@ export const voiceApi = {
       content_type: 'voice',
       media_url: url,
       text_content: null,
+      meta: duration ? { duration } : undefined,
     });
 
     return res.data;
