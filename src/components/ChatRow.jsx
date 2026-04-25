@@ -6,7 +6,7 @@ import { Colors } from '../theme/colors';
 import { formatChatTime } from '../utils/format';
 
 function ChatRow({ chat, contact, onPress }) {
-  const isGroup = chat.chat_type === 'group';
+  const isGroup = chat.chat_type === 'group' || chat.chat_type === 'mixed';
   const name = chat.name || contact?.name || 'Chat';
   const lastTime = formatChatTime(chat.last_message_at);
 

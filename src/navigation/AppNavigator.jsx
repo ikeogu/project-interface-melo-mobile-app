@@ -20,6 +20,8 @@ import ProfileScreen from '../screens/ProfileScreen';
 import VideoCallScreen from '../screens/VideoCallScreen';
 import CreateGroupScreen from '../screens/CreateGroupScreen';
 import NewChatScreen from '../screens/NewChatScreen';
+import GroupTemplatesScreen from '../screens/GroupTemplatesScreen';
+import VoiceCallScreen from '../screens/VoiceCallScreen';
 
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -50,6 +52,11 @@ function ContactsStack() {
         component={VideoCallScreen}
         options={{ presentation: 'fullScreenModal' }}
       />
+      <Stack.Screen
+        name="VoiceCall"
+        component={VoiceCallScreen}
+        options={{ presentation: 'fullScreenModal' }}
+      />
     </Stack.Navigator>
   );
 }
@@ -61,6 +68,12 @@ function ChatsStack() {
       <Stack.Screen name="Chat" component={ChatScreen} />
       <Stack.Screen name="NewChat" component={NewChatScreen} />
       <Stack.Screen name="CreateGroup" component={CreateGroupScreen} />
+      <Stack.Screen name="GroupTemplates" component={GroupTemplatesScreen} />
+      <Stack.Screen
+        name="VoiceCall"
+        component={VoiceCallScreen}
+        options={{ presentation: 'fullScreenModal' }}
+      />
       <Stack.Screen
         name="VideoCall"
         component={VideoCallScreen}

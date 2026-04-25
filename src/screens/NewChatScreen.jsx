@@ -58,7 +58,7 @@ export default function NewChatScreen({ navigation }) {
 
       <FlatList
         data={filtered}
-        keyExtractor={item => item.id}
+        keyExtractor={(item, index) => item.id ?? String(index)}
         renderItem={({ item }) => (
           <TouchableOpacity
             style={styles.row}
@@ -79,7 +79,7 @@ export default function NewChatScreen({ navigation }) {
             }
           </TouchableOpacity>
         )}
-        ItemSeparatorComponent={() => <View style={styles.separator} />}
+        ItemSeparatorComponent={NewChatSeparator}
         contentContainerStyle={{ paddingBottom: 32 }}
         ListEmptyComponent={
           <View style={styles.empty}>
@@ -93,6 +93,9 @@ export default function NewChatScreen({ navigation }) {
     </SafeAreaView>
   );
 }
+
+const newChatSeparatorStyle = { height: 0.5, backgroundColor: '#EEEEEE', marginLeft: 74 };
+const NewChatSeparator = () => <View style={newChatSeparatorStyle} />;
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },

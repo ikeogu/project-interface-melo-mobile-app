@@ -92,13 +92,12 @@ export default function ContactsScreen({ navigation }) {
       ) : (
         <SectionList
           sections={sections}
-          keyExtractor={item => item.id}
+          keyExtractor={keyExtractor}
           refreshControl={<RefreshControl refreshing={isLoading} onRefresh={fetchContacts} />}
           renderSectionHeader={({ section }) => (
             <Text style={styles.sectionHeader}>{section.title}</Text>
           )}
           renderItem={renderItem}
-          keyExtractor={keyExtractor}
           ItemSeparatorComponent={ContactSeparator}
           contentContainerStyle={{ paddingBottom: 20 }}
         />

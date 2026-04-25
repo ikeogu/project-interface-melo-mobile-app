@@ -5,6 +5,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors } from '../theme/colors';
+import { getApiError } from '../utils/format';
 import { useContactsStore } from '../store/contactsStore';
 
 const EMOJI_OPTIONS = ['🤖', '👨‍💼', '👩‍⚕️', '⚖️', '📊', '🧘', '✝️', '🎓', '💡', '🔬'];
@@ -38,7 +39,7 @@ export default function CreateContactScreen({ navigation }) {
       });
       navigation.goBack();
     } catch (e) {
-      Alert.alert('Error', e.response?.data?.detail || 'Could not create contact.');
+      Alert.alert('Error', getApiError(e, 'Could not create contact.'));
     } finally {
       setLoading(false);
     }

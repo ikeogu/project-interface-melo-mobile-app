@@ -10,6 +10,7 @@ const getMsgPreview = (msg) => {
 export const useChatsStore = create((set, get) => ({
   chats: [],
   messages: {},
+  groupTemplates: [],
   isLoading: false,
 
   fetchChats: async () => {
@@ -113,10 +114,29 @@ export const useChatsStore = create((set, get) => ({
     });
   },
 
-  createGroupChat: async (name, contact_ids) => {
-    const res = await chatsApi.createGroupChat(name, contact_ids);
+  fetchGroupTemplates: async () => {
+    try {
+      const res = await chatsApi.getGroupTemplates();
+      set({ groupTemplates: res.data });
+    } catch (e) {
+      console.error('fetchGroupTemplates error:', e);
+    }
+  },
+
+  createFromGroupTemplate: async (template_key) => {
+    const res = await chatsApi.createFromGroupTemplate(template_key);
     set(s => ({ chats: [res.data, ...s.chats] }));
     return res.data;
+  },
+
+  createGroupChat: async (name, contact_ids, user_ids = []) => {
+    const res = await chatsApi.createGroupChat(name, contact_ids, user_ids);
+    set(s => ({ chats: [res.data, ...s.chats] }));
+    return res.data;
+  },
+
+  inviteToChat: async (chat_id, email) => {
+    await chatsApi.inviteToChat(chat_id, email);
   },
 
   openOrCreateChat: async (contact_id) => {

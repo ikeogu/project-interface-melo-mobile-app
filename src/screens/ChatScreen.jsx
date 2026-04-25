@@ -29,7 +29,7 @@ function formatRecordingTime(secs) {
 
 export default function ChatScreen({ route, navigation }) {
   const { chat, contact } = route.params;
-  const isGroup = chat.chat_type === 'group';
+  const isGroup = chat.chat_type === 'group' || chat.chat_type === 'mixed';
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(true);
   const [typingContacts, setTypingContacts] = useState(new Set());
@@ -286,7 +286,10 @@ export default function ChatScreen({ route, navigation }) {
             <TouchableOpacity style={styles.actionBtn} onPress={() => navigation.navigate('VideoCall', { contact })}>
               <Ionicons name="videocam-outline" size={22} color="#FFF" />
             </TouchableOpacity>
-            <TouchableOpacity style={styles.actionBtn}>
+            <TouchableOpacity
+              style={styles.actionBtn}
+              onPress={() => navigation.navigate('VoiceCall', { contact })}
+            >
               <Ionicons name="call-outline" size={20} color="#FFF" />
             </TouchableOpacity>
             <TouchableOpacity style={styles.actionBtn}>

@@ -30,6 +30,15 @@ export const getInitials = (name) => {
     .slice(0, 2);
 };
 
+// FastAPI returns detail as a string OR an array of validation error objects.
+export const getApiError = (e, fallback = 'Something went wrong.') => {
+  const detail = e?.response?.data?.detail;
+  if (!detail) return fallback;
+  if (typeof detail === 'string') return detail;
+  if (Array.isArray(detail)) return detail.map(d => d.msg ?? String(d)).join('\n');
+  return fallback;
+};
+
 export const getAvatarColor = (name) => {
   const colors = [
     '#0D4F3C', '#5C6BC0', '#EF5350', '#FF7043',

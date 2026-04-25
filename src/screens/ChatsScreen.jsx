@@ -21,6 +21,7 @@ export default function ChatsScreen({ navigation }) {
     Alert.alert('New Chat', null, [
       { text: 'New Direct Chat', onPress: () => navigation.navigate('NewChat') },
       { text: 'New Group Chat', onPress: () => navigation.navigate('CreateGroup') },
+      { text: 'Browse Group Templates', onPress: () => navigation.navigate('GroupTemplates') },
       { text: 'Cancel', style: 'cancel' },
     ]);
   };
