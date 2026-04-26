@@ -140,6 +140,11 @@ export const useChatsStore = create((set, get) => ({
   },
 
   openOrCreateChat: async (contact_id) => {
+    // Fetch chats first if this tab hasn't loaded them yet
+    if (get().chats.length === 0) {
+      await get().fetchChats();
+    }
+
     const existing = get().chats.find(c =>
       c.chat_type === 'direct' &&
       c.participants?.some(p => p.id === contact_id && p.type === 'contact')

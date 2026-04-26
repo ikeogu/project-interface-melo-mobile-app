@@ -1,9 +1,14 @@
 import 'react-native-gesture-handler';
-// registerGlobals requires native WebRTC — silently skipped in Expo Go
-try {
-  const { registerGlobals } = require('@livekit/react-native');
-  registerGlobals();
-} catch {}
+import { NativeModules } from 'react-native';
+// registerGlobals wires WebRTC globals — only runs when native module is present
+if (NativeModules.LivekitReactNativeModule) {
+  try {
+    const { registerGlobals } = require('@livekit/react-native');
+    registerGlobals();
+  } catch (e) {
+    console.warn('[LiveKit] registerGlobals failed:', e?.message);
+  }
+}
 import React from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';

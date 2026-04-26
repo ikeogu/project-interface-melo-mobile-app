@@ -6,4 +6,7 @@ export const callsApi = {
 
   startVideoCall: (contact_id) =>
     apiClient.post(`/calls/video/${contact_id}`),
+
+  getHistory: () =>
+    apiClient.get('/calls/history'),
 };

@@ -1,18 +1,15 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet,
-  Animated, Easing, StatusBar, Platform, Alert,
+  Animated, Easing, StatusBar, Platform, NativeModules,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-// LiveKit native modules are not available in Expo Go — guarded at runtime
-let Room, RoomEvent, AudioSession;
-try {
-  ({ Room, RoomEvent } = require('livekit-client'));
-  ({ AudioSession } = require('@livekit/react-native'));
-} catch {}
 import Avatar from '../components/Avatar';
 import { callsApi } from '../api/calls';
+
+// Safe check — doesn't throw, works in both Expo Go and EAS builds
+const liveKitAvailable = !!NativeModules.LivekitReactNativeModule;
 
 export default function VoiceCallScreen({ route, navigation }) {
   const { contact } = route.params;
@@ -24,8 +21,7 @@ export default function VoiceCallScreen({ route, navigation }) {
   const [duration, setDuration] = useState(0);
   const [errorMsg, setErrorMsg] = useState(null);
 
-  const liveKitAvailable = !!Room;
-  const roomRef = useRef(liveKitAvailable ? new Room() : null);
+  const roomRef = useRef(null);
   const durationRef = useRef(null);
 
   // Pulse ring animations
@@ -45,19 +41,25 @@ export default function VoiceCallScreen({ route, navigation }) {
 
     const connect = async () => {
       try {
+        // @livekit/react-native MUST load first — its polyfills (DOMException, etc.)
+        // must be in place before livekit-client's UMD factory executes.
+        const { AudioSession } = require('@livekit/react-native');
+        const { Room, RoomEvent } = require('livekit-client');
+
+        const room = new Room();
+        roomRef.current = room;
+
         const res = await callsApi.startVoiceCall(contact.id);
         const { token, livekit_url } = res.data;
 
         if (cancelled) return;
-
-        const room = roomRef.current;
 
         room.on(RoomEvent.Connected, () => {
           if (!cancelled) setCallStatus('active');
         });
 
         room.on(RoomEvent.Disconnected, () => {
-          if (!cancelled && callStatus !== 'ended') {
+          if (!cancelled) {
             setCallStatus('ended');
             setTimeout(() => navigation.goBack(), 600);
           }
@@ -67,7 +69,6 @@ export default function VoiceCallScreen({ route, navigation }) {
         await room.connect(livekit_url, token, { autoSubscribe: true });
         await room.localParticipant.setMicrophoneEnabled(true);
 
-        // Default to speaker output
         if (Platform.OS === 'ios') {
           await AudioSession.selectAudioOutput('force_speaker');
         } else {
@@ -75,7 +76,7 @@ export default function VoiceCallScreen({ route, navigation }) {
         }
       } catch (e) {
         if (!cancelled) {
-          console.error('[VoiceCall] connect error:', e);
+          console.error('[VoiceCall] connect error:', e?.message ?? e);
           setErrorMsg('Could not start the call. Please try again.');
           setCallStatus('ended');
         }
@@ -87,7 +88,10 @@ export default function VoiceCallScreen({ route, navigation }) {
     return () => {
       cancelled = true;
       roomRef.current?.disconnect();
-      AudioSession?.stopAudioSession().catch(() => {});
+      try {
+        const { AudioSession } = require('@livekit/react-native');
+        AudioSession.stopAudioSession().catch(() => {});
+      } catch {}
     };
   }, []);
 
@@ -136,14 +140,15 @@ export default function VoiceCallScreen({ route, navigation }) {
   const handleSpeaker = async () => {
     const next = !isSpeaker;
     try {
+      const { AudioSession } = require('@livekit/react-native');
       if (Platform.OS === 'ios') {
-        await AudioSession?.selectAudioOutput(next ? 'force_speaker' : 'default');
+        await AudioSession.selectAudioOutput(next ? 'force_speaker' : 'default');
       } else {
-        await AudioSession?.selectAudioOutput(next ? 'speaker' : 'earpiece');
+        await AudioSession.selectAudioOutput(next ? 'speaker' : 'earpiece');
       }
       setIsSpeaker(next);
     } catch (e) {
-      console.warn('[VoiceCall] speaker error:', e);
+      console.warn('[VoiceCall] speaker error:', e?.message ?? e);
     }
   };
 
@@ -152,7 +157,8 @@ export default function VoiceCallScreen({ route, navigation }) {
     clearInterval(durationRef.current);
     try {
       await roomRef.current?.disconnect();
-      await AudioSession?.stopAudioSession();
+      const { AudioSession } = require('@livekit/react-native');
+      await AudioSession.stopAudioSession();
     } catch {}
     setTimeout(() => navigation.goBack(), 600);
   };

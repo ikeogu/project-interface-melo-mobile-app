@@ -22,6 +22,7 @@ import CreateGroupScreen from '../screens/CreateGroupScreen';
 import NewChatScreen from '../screens/NewChatScreen';
 import GroupTemplatesScreen from '../screens/GroupTemplatesScreen';
 import VoiceCallScreen from '../screens/VoiceCallScreen';
+import CallLogsScreen from '../screens/CallLogsScreen';
 
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -30,6 +31,7 @@ function TabIcon({ name, focused }) {
   const icons = {
     Contacts: focused ? 'people' : 'people-outline',
     Chats: focused ? 'chatbubbles' : 'chatbubbles-outline',
+    Calls: focused ? 'call' : 'call-outline',
     Me: focused ? 'person-circle' : 'person-circle-outline',
   };
   return (
@@ -83,6 +85,19 @@ function ChatsStack() {
   );
 }
 
+function CallsStack() {
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="CallLogsList" component={CallLogsScreen} />
+      <Stack.Screen
+        name="VoiceCall"
+        component={VoiceCallScreen}
+        options={{ presentation: 'fullScreenModal' }}
+      />
+    </Stack.Navigator>
+  );
+}
+
 function MainTabs() {
   return (
     <Tab.Navigator
@@ -103,6 +118,7 @@ function MainTabs() {
     >
       <Tab.Screen name="Contacts" component={ContactsStack} />
       <Tab.Screen name="Chats" component={ChatsStack} />
+      <Tab.Screen name="Calls" component={CallsStack} />
       <Tab.Screen name="Me" component={ProfileScreen} options={{ headerShown: false }} />
     </Tab.Navigator>
   );
