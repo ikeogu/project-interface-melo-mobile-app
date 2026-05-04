@@ -44,9 +44,18 @@ export default function ChatsScreen({ navigation }) {
     );
   }, [getContact, navigation]);
 
-  const sorted = [...chats].sort((a, b) =>
-    new Date(b.last_message_at || 0) - new Date(a.last_message_at || 0)
-  );
+  // Sort newest first, then deduplicate — keep only the most recent chat per contact
+  const sorted = [...chats]
+    .sort((a, b) => new Date(b.last_message_at || 0) - new Date(a.last_message_at || 0))
+    .filter((chat, _, arr) => {
+      if (chat.chat_type !== 'direct') return true;
+      const contactId = chat.participants?.find(p => p.type === 'contact')?.id;
+      if (!contactId) return true;
+      return arr.findIndex(
+        c => c.chat_type === 'direct' &&
+          c.participants?.some(p => p.id === contactId && p.type === 'contact')
+      ) === arr.indexOf(chat);
+    });
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>

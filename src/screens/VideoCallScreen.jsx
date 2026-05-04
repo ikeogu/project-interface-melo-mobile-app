@@ -1,185 +1,132 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet,
-  Dimensions, StatusBar,
+  StatusBar, ActivityIndicator, Alert,
 } from 'react-native';
+import { WebView } from 'react-native-webview';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { callsApi } from '../api/calls';
 import { Colors } from '../theme/colors';
-import Avatar from '../components/Avatar';
-
-const { width, height } = Dimensions.get('window');
 
 export default function VideoCallScreen({ route, navigation }) {
   const { contact } = route.params;
-  const [callDuration, setCallDuration] = useState(0);
-  const [isMuted, setIsMuted] = useState(false);
-  const [isCameraOff, setIsCameraOff] = useState(false);
-  const [callStatus, setCallStatus] = useState('connecting'); // connecting | active | ended
+  const insets = useSafeAreaInsets();
+
+  const [phase, setPhase] = useState('loading'); // loading | active | error
+  const [conversationUrl, setConversationUrl] = useState(null);
+  const [conversationId, setConversationId] = useState(null);
+  const [errorMsg, setErrorMsg] = useState('');
+  const webviewRef = useRef(null);
 
   useEffect(() => {
-    // Simulate connecting
-    const connectTimer = setTimeout(() => setCallStatus('active'), 1500);
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await callsApi.startVideoCall(contact.id);
+        if (cancelled) return;
+        setConversationUrl(res.data.conversation_url);
+        setConversationId(res.data.conversation_id);
+        setPhase('active');
+      } catch (err) {
+        if (cancelled) return;
+        const detail = err?.response?.data?.detail || 'Could not start video call.';
+        setErrorMsg(detail);
+        setPhase('error');
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [contact.id]);
 
-    // Duration counter
-    let durationTimer;
-    if (callStatus === 'active') {
-      durationTimer = setInterval(() => setCallDuration(d => d + 1), 1000);
+  const handleEndCall = async () => {
+    if (conversationId) {
+      callsApi.endVideoCall(conversationId).catch(() => {});
     }
-
-    return () => {
-      clearTimeout(connectTimer);
-      clearInterval(durationTimer);
-    };
-  }, [callStatus]);
-
-  useEffect(() => {
-    let t;
-    if (callStatus === 'connecting') {
-      t = setTimeout(() => setCallStatus('active'), 1500);
-    }
-    return () => clearTimeout(t);
-  }, []);
-
-  useEffect(() => {
-    let t;
-    if (callStatus === 'active') {
-      t = setInterval(() => setCallDuration(d => d + 1), 1000);
-    }
-    return () => clearInterval(t);
-  }, [callStatus]);
-
-  const formatDuration = (secs) => {
-    const m = Math.floor(secs / 60).toString().padStart(2, '0');
-    const s = (secs % 60).toString().padStart(2, '0');
-    return `${m}:${s}`;
+    navigation.goBack();
   };
 
-  const handleEndCall = () => {
-    setCallStatus('ended');
-    setTimeout(() => navigation.goBack(), 800);
+  const handleWebViewError = () => {
+    Alert.alert('Connection error', 'Lost connection to the video call.', [
+      { text: 'End Call', onPress: () => navigation.goBack() },
+    ]);
   };
 
   return (
     <View style={styles.container}>
       <StatusBar barStyle="light-content" />
 
-      {/* AI Avatar — full screen background */}
-      <View style={styles.avatarBackground}>
-        <Avatar name={contact?.name} emoji={contact?.avatar_emoji} size={160} />
-      </View>
-
-      {/* Top bar */}
-      <View style={styles.topBar}>
-        <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
-          <Text style={styles.backIcon}>‹</Text>
-        </TouchableOpacity>
-        <View style={styles.callInfo}>
-          <Text style={styles.contactName}>{contact?.name || 'Contact'}</Text>
-          <View style={styles.statusRow}>
-            <View style={[styles.statusDot, callStatus === 'active' && styles.statusDotActive]} />
-            <Text style={styles.statusText}>
-              {callStatus === 'connecting' ? 'Connecting...' : formatDuration(callDuration)}
-            </Text>
-          </View>
+      {/* Loading state */}
+      {phase === 'loading' && (
+        <View style={styles.centered}>
+          <ActivityIndicator size="large" color={Colors.accent} />
+          <Text style={styles.loadingText}>Connecting to {contact?.name}…</Text>
         </View>
-      </View>
+      )}
 
-      {/* User self-view (picture-in-picture) */}
-      <View style={styles.selfView}>
-        <View style={styles.selfViewInner}>
-          <Text style={styles.selfViewText}>You</Text>
+      {/* Error state */}
+      {phase === 'error' && (
+        <View style={styles.centered}>
+          <Text style={styles.errorText}>{errorMsg}</Text>
+          <TouchableOpacity style={styles.endBtn} onPress={() => navigation.goBack()}>
+            <Text style={styles.endBtnText}>Go Back</Text>
+          </TouchableOpacity>
         </View>
-      </View>
+      )}
 
-      {/* Bottom controls */}
-      <View style={styles.controls}>
-        <TouchableOpacity
-          style={[styles.controlBtn, isMuted && styles.controlBtnActive]}
-          onPress={() => setIsMuted(!isMuted)}
-        >
-          <Text style={styles.controlIcon}>{isMuted ? '🔇' : '🎙'}</Text>
-        </TouchableOpacity>
+      {/* Active call — Tavus CVI in WebView */}
+      {phase === 'active' && conversationUrl && (
+        <WebView
+          ref={webviewRef}
+          source={{ uri: conversationUrl }}
+          style={styles.webview}
+          mediaPlaybackRequiresUserAction={false}
+          allowsInlineMediaPlayback
+          javaScriptEnabled
+          domStorageEnabled
+          onError={handleWebViewError}
+          onHttpError={handleWebViewError}
+        />
+      )}
 
-        <TouchableOpacity
-          style={[styles.controlBtn, isCameraOff && styles.controlBtnActive]}
-          onPress={() => setIsCameraOff(!isCameraOff)}
-        >
-          <Text style={styles.controlIcon}>{isCameraOff ? '📷' : '🎥'}</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.endBtn} onPress={handleEndCall}>
-          <Text style={styles.endBtnText}>End</Text>
-        </TouchableOpacity>
-      </View>
+      {/* End call button — always visible */}
+      {phase !== 'loading' && (
+        <View style={[styles.endCallBar, { paddingBottom: Math.max(insets.bottom, 16) }]}>
+          <TouchableOpacity style={styles.endBtn} onPress={handleEndCall}>
+            <Text style={styles.endBtnText}>End Call</Text>
+          </TouchableOpacity>
+        </View>
+      )}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#1A1A1A' },
-  avatarBackground: {
-    ...StyleSheet.absoluteFillObject,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#2A3A2A',
-  },
-  topBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingTop: 60,
-    paddingHorizontal: 16,
-    gap: 12,
-  },
-  backBtn: {
-    width: 36, height: 36, borderRadius: 18,
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    alignItems: 'center', justifyContent: 'center',
-  },
-  backIcon: { fontSize: 24, color: '#FFF', lineHeight: 30 },
-  callInfo: {},
-  contactName: { fontSize: 20, fontWeight: '600', color: '#FFF' },
-  statusRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4 },
-  statusDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#888' },
-  statusDotActive: { backgroundColor: '#4CAF50' },
-  statusText: { fontSize: 13, color: 'rgba(255,255,255,0.8)' },
-  selfView: {
-    position: 'absolute',
-    bottom: 130,
-    right: 16,
-    width: 100,
-    height: 140,
-    borderRadius: 14,
-    overflow: 'hidden',
-    borderWidth: 2,
-    borderColor: 'rgba(255,255,255,0.3)',
-  },
-  selfViewInner: {
+  webview: { flex: 1 },
+  centered: {
     flex: 1,
-    backgroundColor: '#444',
     alignItems: 'center',
     justifyContent: 'center',
+    paddingHorizontal: 32,
+    gap: 20,
   },
-  selfViewText: { fontSize: 12, color: 'rgba(255,255,255,0.6)' },
-  controls: {
+  loadingText: { color: 'rgba(255,255,255,0.8)', fontSize: 16, marginTop: 16 },
+  errorText: { color: '#FF6B6B', fontSize: 15, textAlign: 'center' },
+  endCallBar: {
     position: 'absolute',
-    bottom: 40,
+    bottom: 0,
     left: 0,
     right: 0,
-    flexDirection: 'row',
-    justifyContent: 'center',
     alignItems: 'center',
-    gap: 24,
+    paddingTop: 12,
+    backgroundColor: 'rgba(0,0,0,0.5)',
   },
-  controlBtn: {
-    width: 60, height: 60, borderRadius: 30,
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    alignItems: 'center', justifyContent: 'center',
-  },
-  controlBtnActive: { backgroundColor: 'rgba(255,255,255,0.4)' },
-  controlIcon: { fontSize: 24 },
   endBtn: {
-    width: 80, height: 60, borderRadius: 30,
+    width: 120,
+    height: 50,
+    borderRadius: 25,
     backgroundColor: '#E53935',
-    alignItems: 'center', justifyContent: 'center',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   endBtnText: { fontSize: 16, fontWeight: '600', color: '#FFF' },
 });
