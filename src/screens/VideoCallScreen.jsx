@@ -6,17 +6,67 @@ import {
 import { WebView } from 'react-native-webview';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { callsApi } from '../api/calls';
+import { useAuthStore } from '../store/authStore';
 import { Colors } from '../theme/colors';
+
+// Injected into the Daily.co WebView to auto-fill the participant name and
+// click join — bypassing the name-entry popup entirely.
+function buildAutoJoinScript(name) {
+  const safeName = name.replace(/'/g, "\\'");
+  return `
+    (function () {
+      function tryFill() {
+        // Daily.co pre-join screen — find the name input
+        var input = document.querySelector(
+          'input[placeholder*="name" i], input[name="name"], input[id*="name" i]'
+        );
+        if (!input) return false;
+
+        // Set value and fire synthetic React events so the component updates
+        var nativeInputSetter = Object.getOwnPropertyDescriptor(
+          window.HTMLInputElement.prototype, 'value'
+        ).set;
+        nativeInputSetter.call(input, '${safeName}');
+        input.dispatchEvent(new Event('input', { bubbles: true }));
+        input.dispatchEvent(new Event('change', { bubbles: true }));
+
+        // Click the join/continue button after a short delay
+        setTimeout(function () {
+          var btn = document.querySelector(
+            'button[type="submit"], button[data-testid*="join" i], button[class*="join" i], button[aria-label*="join" i]'
+          );
+          if (btn) btn.click();
+        }, 400);
+
+        return true;
+      }
+
+      // Try immediately, then poll until the element appears (max 15s)
+      if (!tryFill()) {
+        var attempts = 0;
+        var iv = setInterval(function () {
+          attempts++;
+          if (tryFill() || attempts > 50) clearInterval(iv);
+        }, 300);
+      }
+    })();
+    true; // required by react-native-webview
+  `;
+}
 
 export default function VideoCallScreen({ route, navigation }) {
   const { contact } = route.params;
   const insets = useSafeAreaInsets();
+  const { user } = useAuthStore();
 
-  const [phase, setPhase] = useState('loading'); // loading | active | error
+  const [phase, setPhase] = useState('loading');
   const [conversationUrl, setConversationUrl] = useState(null);
   const [conversationId, setConversationId] = useState(null);
   const [errorMsg, setErrorMsg] = useState('');
   const webviewRef = useRef(null);
+
+  const userName = user?.display_name || 'Me';
+  const autoJoinScript = buildAutoJoinScript(userName);
 
   useEffect(() => {
     let cancelled = false;
@@ -37,10 +87,8 @@ export default function VideoCallScreen({ route, navigation }) {
     return () => { cancelled = true; };
   }, [contact.id]);
 
-  const handleEndCall = async () => {
-    if (conversationId) {
-      callsApi.endVideoCall(conversationId).catch(() => {});
-    }
+  const handleEndCall = () => {
+    if (conversationId) callsApi.endVideoCall(conversationId).catch(() => {});
     navigation.goBack();
   };
 
@@ -54,7 +102,6 @@ export default function VideoCallScreen({ route, navigation }) {
     <View style={styles.container}>
       <StatusBar barStyle="light-content" />
 
-      {/* Loading state */}
       {phase === 'loading' && (
         <View style={styles.centered}>
           <ActivityIndicator size="large" color={Colors.accent} />
@@ -62,7 +109,6 @@ export default function VideoCallScreen({ route, navigation }) {
         </View>
       )}
 
-      {/* Error state */}
       {phase === 'error' && (
         <View style={styles.centered}>
           <Text style={styles.errorText}>{errorMsg}</Text>
@@ -72,7 +118,6 @@ export default function VideoCallScreen({ route, navigation }) {
         </View>
       )}
 
-      {/* Active call — Tavus CVI in WebView */}
       {phase === 'active' && conversationUrl && (
         <WebView
           ref={webviewRef}
@@ -82,12 +127,12 @@ export default function VideoCallScreen({ route, navigation }) {
           allowsInlineMediaPlayback
           javaScriptEnabled
           domStorageEnabled
+          injectedJavaScript={autoJoinScript}
           onError={handleWebViewError}
           onHttpError={handleWebViewError}
         />
       )}
 
-      {/* End call button — always visible */}
       {phase !== 'loading' && (
         <View style={[styles.endCallBar, { paddingBottom: Math.max(insets.bottom, 16) }]}>
           <TouchableOpacity style={styles.endBtn} onPress={handleEndCall}>
